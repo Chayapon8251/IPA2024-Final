@@ -8,6 +8,7 @@
     ansible_network_os: cisco.ios.ios
     ansible_user: admin
     ansible_password: cisco
+    ansible_connect_timeout: 20
     
   tasks:
     - name: Get running-config
