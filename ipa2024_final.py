@@ -9,7 +9,7 @@ import ansible_final
 load_dotenv()
 
 WEBEX_TOKEN = os.getenv("WEBEX_TEAMS_ACCESS_TOKEN")
-ROOM_ID = "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL1JPT00vZTZkNTkzMzAtNmY4Ny0xMWYwLTk3YjctMGIxYzg5Y2RlMzQw" # ห้อง IPA2024-Final
+ROOM_ID = "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL1JPT00vYmQwODczMTAtNmMyNi0xMWYwLWE1MWMtNzkzZDM2ZjZjM2Zm"
 ROUTER_IP = "10.0.15.61"
 
 
