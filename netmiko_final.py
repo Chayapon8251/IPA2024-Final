@@ -1,60 +1,59 @@
 from netmiko import ConnectHandler
+from netmiko.exceptions import NetmikoTimeoutException  # <--- 1. Import Error นี้เข้ามา
 from pprint import pprint
 
-# ไม่ต้อง hardcode IP ที่นี่ เราจะรับมาจากไฟล์หลัก
-# device_ip = "<!!!REPLACEME with router IP address!!!>" 
 username = "admin"
 password = "cisco"
 
 def gigabit_status(router_ip):
     
     device_params = {
-        "device_type": "cisco_xe", # <--- 1. Device Type ที่ถูกต้องสำหรับ IOS XE
-        "ip": router_ip,           # <--- 2. ใช้ IP ที่รับเข้ามา
+        "device_type": "cisco_xe", 
+        "ip": router_ip,
         "username": username,
         "password": password,
         "conn_timeout": 15
     }
     
-    ans = ""
-    with ConnectHandler(**device_params) as ssh:
-        up = 0
-        down = 0
-        admin_down = 0
-        
-        # <--- 3. คำสั่งที่ถูกต้อง และเปิดใช้ TextFSM
-        result = ssh.send_command("show interfaces", use_textfsm=True)
-        
-        # TextFSM จะคืนค่ามาเป็น List ของ Dictionaries
-        for status in result:
+    try:  # <--- 2. เริ่ม try คลุมทั้งหมด
+        ans = ""
+        with ConnectHandler(**device_params) as ssh:
+            up = 0
+            down = 0
+            admin_down = 0
             
-            # <--- 4. กรองเอาเฉพาะ Interface ที่เราสนใจ
-            if 'GigabitEthernet' in status['interface']:
-                
-                interface_name = status['interface']
-                link_status = status['link_status']
-                protocol_status = status['protocol_status'] # สถานะ line protocol
-                
-                status_str = "" # ตัวแปรเก็บสถานะ "up", "down", ...
-                
-                # <--- 5. Logic การนับสถานะ
-                if link_status == "up" and protocol_status == "up":
-                    status_str = "up"
-                    up += 1
-                elif link_status == "administratively down":
-                    status_str = "administratively down"
-                    admin_down += 1
-                else: 
-                    # กรณีอื่นๆ (เช่น up/down, down/down) ตีเป็น down
-                    status_str = "down"
-                    down += 1
-                
-                # <--- 6. สร้าง String ส่วนแรก
-                ans += f"{interface_name} {status_str}, "
+            result = ssh.send_command("show interfaces", use_textfsm=True)
+            
+            for status in result:
+                if 'GigabitEthernet' in status['interface']:
+                    interface_name = status['interface']
+                    link_status = status['link_status']
+                    protocol_status = status['protocol_status']
+                    
+                    status_str = ""
+                    
+                    if link_status == "up" and protocol_status == "up":
+                        status_str = "up"
+                        up += 1
+                    elif link_status == "administratively down":
+                        status_str = "administratively down"
+                        admin_down += 1
+                    else: 
+                        status_str = "down"
+                        down += 1
+                    
+                    ans += f"{interface_name} {status_str}, "
 
-        # <--- 7. สรุปผลรวมต่อท้าย
-        ans = ans.strip(', ') # ลบ , ตัวสุดท้ายออก
-        ans += f" -> {up} up, {down} down, {admin_down} administratively down"
-        
-        pprint(ans) # Print ให้เห็นใน terminal
-        return ans
+            ans = ans.strip(', ')
+            ans += f" -> {up} up, {down} down, {admin_down} administratively down"
+            
+            pprint(ans)
+            return ans
+            
+    except NetmikoTimeoutException:  # <--- 3. ดักจับ Error ถ้า Timeout
+        print(f"ERROR: Connection timed out to {router_ip}")
+        # คืนค่าเป็น String Error (Bot หลักจะเอาไปส่งใน Webex)
+        return f"Error: Connection timed out to {router_ip}"
+    except Exception as e:  # <--- 4. ดักจับ Error อื่นๆ (เผื่อไว้)
+        print(f"ERROR: An unknown error occurred: {e}")
+        return f"Error: An unknown error occurred: {e}"
