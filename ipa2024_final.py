@@ -2,17 +2,17 @@ import os
 import time
 from dotenv import load_dotenv
 from webexteamssdk import WebexTeamsAPI
-import restconf_final # Import file ที่เราสร้าง
-import netmiko_final  # <--- 1. Import Netmiko
-import ansible_final  # <--- 2. Import Ansible
-# โหลด environment variables จากไฟล์ .env
+import restconf_final
+import netmiko_final
+import ansible_final
+
 load_dotenv()
 
 WEBEX_TOKEN = os.getenv("WEBEX_TEAMS_ACCESS_TOKEN")
 ROOM_ID = "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL1JPT00vZTZkNTkzMzAtNmY4Ny0xMWYwLTk3YjctMGIxYzg5Y2RlMzQw" # ห้อง IPA2024-Final
-ROUTER_IP = "10.0.15.61" # หรือ IP อื่นๆ ใน Range ที่กำหนด
+ROUTER_IP = "10.0.15.61"
 
-# ตรวจสอบว่ามี Token หรือไม่
+
 if not WEBEX_TOKEN:
     print("Error: WEBEX_TEAMS_ACCESS_TOKEN not found.")
     exit()
@@ -35,15 +35,12 @@ def process_message(message_text, student_id):
     if command == "create":
         return restconf_final.create_interface(ROUTER_IP, student_id)
     elif command == "delete":
-        # เปลี่ยนจาก "return ..." เป็น
         return restconf_final.delete_interface(ROUTER_IP, student_id)
         
     elif command == "enable":
-        # เปลี่ยนจาก "return ..." เป็น
         return restconf_final.set_interface_state(ROUTER_IP, student_id, enabled=True)
         
     elif command == "disable":
-        # เปลี่ยนจาก "return ..." เป็น
         return restconf_final.set_interface_state(ROUTER_IP, student_id, enabled=False)
     elif command == "status":
         status = restconf_final.get_interface_status(ROUTER_IP, f"Loopback{student_id}")
@@ -64,7 +61,6 @@ def process_message(message_text, student_id):
         if result.startswith("Error:"):
             return ('error', result)
         else:
-            # ถ้าสำเร็จ result คือ "ชื่อไฟล์"
             return ('file', result)
     else:
         return f"Unknown command: {command}"
@@ -87,19 +83,14 @@ try:
                     student_id = last_message.text.split()[0][1:]
                     if student_id.isdigit() and len(student_id) == 8:
                         
-                        # --- นี่คือ Logic ใหม่ที่ถูกต้อง ---
-                        # 1. ประมวลผลข้อความ
                         msg_type, content = process_message(last_message.text, student_id)
                         
-                        # 2. ตรวจสอบว่าต้องส่ง Text หรือ File
                         if msg_type == 'file':
                             print(f"Sending file: {content}")
                             api.messages.create(roomId=ROOM_ID, files=[content], text=f"Here is the config for {student_id}")
                         else:
-                            # (msg_type == 'text' or 'error')
                             print(f"Sending text: {content}")
                             api.messages.create(roomId=ROOM_ID, text=content)
-                        # --- จบส่วนที่แก้ ---
                             
                     else:
                         print("Message is not a valid student command.")

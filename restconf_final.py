@@ -26,9 +26,9 @@ def get_interface_status(router_ip, interface_name):
         response = requests.get(url, headers=headers, auth=auth, verify=False)
         if response.status_code == 200:
             data = response.json()
-            # ดูจาก ietf-interfaces.yang model
+
             is_enabled = data.get("ietf-interfaces:interface", {}).get("enabled", False)
-            # oper_status = data.get("ietf-interfaces:interface", {}).get("oper-status", "down")
+
             if is_enabled:
                 return "exists_enabled"
             else:
